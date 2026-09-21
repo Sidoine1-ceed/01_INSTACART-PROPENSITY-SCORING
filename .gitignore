@@ -1,0 +1,24 @@
+.venv/
+venv/
+env/
+__pycache__/
+*.pyc
+.env
+
+# Données brutes Kaggle
+data/raw/*
+!data/raw/products.csv
+!data/raw/departments.csv
+
+# Données intermédiaires / entraînement
+data/processed/features.parquet
+data/processed/training_dataset.parquet
+data/processed/customer_product_features.parquet
+data/processed/customer_department_features.parquet
+data/processed/customer_features.parquet
+data/processed/product_features.parquet
+
+# Notebooks / environnement local
+.ipynb_checkpoints/
+.vscode/
+.DS_Store
