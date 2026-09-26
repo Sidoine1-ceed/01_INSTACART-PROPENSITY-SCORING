@@ -1,8 +1,6 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
-import joblib
 from pathlib import Path
 
 try:
@@ -10,7 +8,7 @@ try:
 except ImportError:
     px = None
 
-from src.config import PROCESSED_DIR, MODEL_DIR
+from src.config import PROCESSED_DIR
 
 
 # ============================================================
@@ -20,6 +18,7 @@ from src.config import PROCESSED_DIR, MODEL_DIR
 ROOT_DIR = Path(__file__).resolve().parent
 RAW_DIR = ROOT_DIR / "data" / "raw"
 OUTPUT_DIR = ROOT_DIR / "data" / "output"
+
 LOGO_PATH = ROOT_DIR / "logo.png"
 LOGO_PATH1 = ROOT_DIR / "logo instacart.png"
 
@@ -30,7 +29,11 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# Palette inspirée du logo
+
+# ============================================================
+# PALETTE
+# ============================================================
+
 NAVY = "#0B1F3A"
 BLUE = "#0066CC"
 CYAN = "#18BFEA"
@@ -38,11 +41,13 @@ TEAL = "#18A999"
 VIOLET = "#635BFF"
 ORANGE = "#FF8A3D"
 PINK = "#E94B8A"
+
 LIGHT_BLUE = "#EAF5FF"
 LIGHT_CYAN = "#E8FAFE"
 LIGHT_VIOLET = "#F0EEFF"
 LIGHT_ORANGE = "#FFF2E8"
 LIGHT_TEAL = "#EAF9F6"
+
 TEXT = "#172033"
 MUTED = "#667085"
 BORDER = "#E6EAF0"
@@ -55,8 +60,13 @@ BORDER = "#E6EAF0"
 st.markdown(
     f"""
     <style>
+
     .stApp {{
-        background: linear-gradient(180deg, #F8FBFF 0%, #FFFFFF 32%);
+        background: linear-gradient(
+            180deg,
+            #F8FBFF 0%,
+            #FFFFFF 32%
+        );
         color: {TEXT};
     }}
 
@@ -67,7 +77,11 @@ st.markdown(
     }}
 
     [data-testid="stSidebar"] {{
-        background: linear-gradient(180deg, #F7FBFF 0%, #FFFFFF 70%);
+        background: linear-gradient(
+            180deg,
+            #F7FBFF 0%,
+            #FFFFFF 70%
+        );
         border-right: 1px solid {BORDER};
     }}
 
@@ -132,11 +146,30 @@ st.markdown(
         box-shadow: 0 4px 14px rgba(11,31,58,0.05);
     }}
 
-    .insight-blue {{ border-left: 5px solid {BLUE}; background: {LIGHT_BLUE}; }}
-    .insight-cyan {{ border-left: 5px solid {CYAN}; background: {LIGHT_CYAN}; }}
-    .insight-violet {{ border-left: 5px solid {VIOLET}; background: {LIGHT_VIOLET}; }}
-    .insight-orange {{ border-left: 5px solid {ORANGE}; background: {LIGHT_ORANGE}; }}
-    .insight-teal {{ border-left: 5px solid {TEAL}; background: {LIGHT_TEAL}; }}
+    .insight-blue {{
+        border-left: 5px solid {BLUE};
+        background: {LIGHT_BLUE};
+    }}
+
+    .insight-cyan {{
+        border-left: 5px solid {CYAN};
+        background: {LIGHT_CYAN};
+    }}
+
+    .insight-violet {{
+        border-left: 5px solid {VIOLET};
+        background: {LIGHT_VIOLET};
+    }}
+
+    .insight-orange {{
+        border-left: 5px solid {ORANGE};
+        background: {LIGHT_ORANGE};
+    }}
+
+    .insight-teal {{
+        border-left: 5px solid {TEAL};
+        background: {LIGHT_TEAL};
+    }}
 
     div[data-testid="stMetric"] {{
         background: #FFFFFF;
@@ -154,7 +187,6 @@ st.markdown(
         color: {NAVY};
     }}
 
-    /* Navigation horizontale : rendu en barres cliquables */
     div[role="radiogroup"] {{
         gap: 7px;
         margin: 4px 0 18px 0;
@@ -212,6 +244,7 @@ st.markdown(
         color: {MUTED};
         font-size: 0.82rem;
     }}
+
     </style>
     """,
     unsafe_allow_html=True,
@@ -224,60 +257,129 @@ st.markdown(
 
 @st.cache_data(show_spinner=False)
 def load_scores():
+
     path = PROCESSED_DIR / "customer_product_scores.parquet"
+
     if not path.exists():
-        raise FileNotFoundError(f"Fichier introuvable : {path}")
+        raise FileNotFoundError(
+            f"Fichier introuvable : {path}"
+        )
+
     return pd.read_parquet(path)
 
 
 @st.cache_data(show_spinner=False)
 def load_products():
+
     path = RAW_DIR / "products.csv"
+
     if not path.exists():
-        raise FileNotFoundError(f"Fichier introuvable : {path}")
+        raise FileNotFoundError(
+            f"Fichier introuvable : {path}"
+        )
+
     return pd.read_csv(path)
 
 
 @st.cache_data(show_spinner=False)
 def load_departments():
+
     path = RAW_DIR / "departments.csv"
+
     if not path.exists():
-        return pd.DataFrame(columns=["department_id", "department"])
+        return pd.DataFrame(
+            columns=[
+                "department_id",
+                "department"
+            ]
+        )
+
     return pd.read_csv(path)
 
 
 @st.cache_data(show_spinner=False)
-def load_training_dataset():
-    path = PROCESSED_DIR / "training_dataset.parquet"
+def load_lift_curve():
+
+    path = OUTPUT_DIR / "lift_curve.csv"
+
     if not path.exists():
         return None
+
+    return pd.read_csv(path)
+
+
+@st.cache_data
+def load_overview_kpis():
+    path = OUTPUT_DIR / "overview_kpis.json"
+    if not path.exists():
+        return None
+
+    import json
+
+    with open(path, "r", encoding="utf-8") as f:
+        return json.load(f)
+
+
+@st.cache_data
+def load_overview_customer_profile():
+    path = OUTPUT_DIR / "overview_customer_profile.parquet"
+
+    if not path.exists():
+        return None
+
     return pd.read_parquet(path)
 
 
-@st.cache_resource(show_spinner=False)
-def load_model():
-    path = MODEL_DIR / "random_forest_model.joblib"
+@st.cache_data
+def load_overview_product_profile():
+    path = OUTPUT_DIR / "overview_product_profile.parquet"
+
     if not path.exists():
         return None
-    return joblib.load(path)
+
+    return pd.read_parquet(path)
 
 
-@st.cache_resource(show_spinner=False)
-def load_features():
-    path = MODEL_DIR / "features.joblib"
+@st.cache_data
+def load_overview_department_stats():
+    path = OUTPUT_DIR / "overview_department_stats.csv"
+
     if not path.exists():
-        return []
-    return joblib.load(path)
+        return None
 
+    return pd.read_csv(path)
+
+
+@st.cache_data
+def load_overview_target_balance():
+    path = OUTPUT_DIR / "overview_target_balance.csv"
+
+    if not path.exists():
+        return None
+
+    return pd.read_csv(path)
 
 # ============================================================
-# PREPARATION
+# DATA PREPARATION
 # ============================================================
 
 @st.cache_data(show_spinner=False)
-def enrich_scores(scores, products, departments):
-    product_cols = ["product_id", "product_name", "department_id"]
-    available = [c for c in product_cols if c in products.columns]
+def enrich_scores(
+    scores,
+    products,
+    departments
+):
+
+    product_cols = [
+        "product_id",
+        "product_name",
+        "department_id",
+    ]
+
+    available = [
+        c for c in product_cols
+        if c in products.columns
+    ]
 
     result = scores.merge(
         products[available],
@@ -285,9 +387,18 @@ def enrich_scores(scores, products, departments):
         how="left",
     )
 
-    if "department_id" in result.columns and "department" in departments.columns:
+    if (
+        "department_id" in result.columns
+        and "department" in departments.columns
+    ):
+
         result = result.merge(
-            departments[["department_id", "department"]],
+            departments[
+                [
+                    "department_id",
+                    "department"
+                ]
+            ],
             on="department_id",
             how="left",
         )
@@ -295,21 +406,12 @@ def enrich_scores(scores, products, departments):
     if "department" not in result.columns:
         result["department"] = "Non renseigné"
 
-    result["department"] = result["department"].fillna("Non renseigné")
-    return result
-
-
-@st.cache_data(show_spinner=False)
-def enrich_training(training_df, departments):
-    if training_df is None:
-        return None
-    if "department_id" not in training_df.columns or "department" not in departments.columns:
-        return training_df
-    return training_df.merge(
-        departments[["department_id", "department"]],
-        on="department_id",
-        how="left",
+    result["department"] = (
+        result["department"]
+        .fillna("Non renseigné")
     )
+
+    return result
 
 
 def apply_filters_to_scores(
@@ -319,128 +421,242 @@ def apply_filters_to_scores(
     deciles_selected,
     min_score,
 ):
+
     out = df
 
     if departments_selected:
-        out = out[out["department"].isin(departments_selected)]
+        out = out[
+            out["department"].isin(
+                departments_selected
+            )
+        ]
 
-    if segments_selected and "marketing_segment" in out.columns:
-        out = out[out["marketing_segment"].isin(segments_selected)]
+    if (
+        segments_selected
+        and "marketing_segment" in out.columns
+    ):
 
-    if deciles_selected and "score_decile" in out.columns:
-        out = out[out["score_decile"].isin(deciles_selected)]
+        out = out[
+            out["marketing_segment"].isin(
+                segments_selected
+            )
+        ]
+
+    if (
+        deciles_selected
+        and "score_decile" in out.columns
+    ):
+
+        out = out[
+            out["score_decile"].isin(
+                deciles_selected
+            )
+        ]
 
     if "propensity_score" in out.columns:
-        out = out[out["propensity_score"] >= min_score]
+
+        out = out[
+            out["propensity_score"] >= min_score
+        ]
 
     return out
 
 
-def apply_filters_to_training(df, departments_selected):
-    if df is None:
-        return None
-    if departments_selected and "department" in df.columns:
-        return df[df["department"].isin(departments_selected)]
-    return df
-
+# ============================================================
+# DESCRIPTIVE STATISTICS
+# ============================================================
 
 @st.cache_data(show_spinner=False)
 def get_dataset_kpis(df):
+
     if df is None:
         return {}
+
     return {
+
         "rows": len(df),
+
         "variables": len(df.columns),
-        "customers": df["user_id"].nunique() if "user_id" in df.columns else 0,
-        "products": df["product_id"].nunique() if "product_id" in df.columns else 0,
-        "departments": df["department_id"].nunique() if "department_id" in df.columns else 0,
+
+        "customers": (
+            df["user_id"].nunique()
+            if "user_id" in df.columns
+            else 0
+        ),
+
+        "products": (
+            df["product_id"].nunique()
+            if "product_id" in df.columns
+            else 0
+        ),
+
+        "departments": (
+            df["department_id"].nunique()
+            if "department_id" in df.columns
+            else (
+                df["department"].nunique()
+                if "department" in df.columns
+                else 0
+            )
+        ),
     }
 
 
 @st.cache_data(show_spinner=False)
 def get_customer_profile(df):
+
     cols = [
+
         "user_id",
+
         "customer_total_orders",
+
         "unique_products",
+
         "unique_aisles",
+
         "unique_departments",
+
         "avg_products_per_order",
+
         "avg_days_between_orders",
+
     ]
-    cols = [c for c in cols if c in df.columns]
+
+    cols = [
+        c for c in cols
+        if c in df.columns
+    ]
+
     if "user_id" not in cols:
         return pd.DataFrame()
-    return df[cols].drop_duplicates("user_id")
+
+    return (
+        df[cols]
+        .drop_duplicates("user_id")
+    )
 
 
 @st.cache_data(show_spinner=False)
 def get_product_profile(df):
+
     cols = [
+
         "product_id",
+
         "product_purchase_count",
+
         "product_unique_users",
+
         "product_reorder_rate",
+
         "department",
+
     ]
-    cols = [c for c in cols if c in df.columns]
+
+    cols = [
+        c for c in cols
+        if c in df.columns
+    ]
+
     if "product_id" not in cols:
         return pd.DataFrame()
-    return df[cols].drop_duplicates("product_id")
+
+    return (
+        df[cols]
+        .drop_duplicates("product_id")
+    )
 
 
 @st.cache_data(show_spinner=False)
 def get_department_stats(df):
-    if df is None or "department" not in df.columns:
+
+    if (
+        df is None
+        or "department" not in df.columns
+    ):
         return pd.DataFrame()
 
-    agg = {"product_id": "nunique"}
+    agg = {
+        "product_id": "nunique"
+    }
+
     if "user_id" in df.columns:
         agg["user_id"] = "nunique"
-    if "product_reorder_rate" in df.columns:
-        agg["product_reorder_rate"] = "mean"
-    if "customer_product_reorder_rate" in df.columns:
-        agg["customer_product_reorder_rate"] = "mean"
 
-    result = df.groupby("department").agg(agg).reset_index()
+    if "product_reorder_rate" in df.columns:
+        agg[
+            "product_reorder_rate"
+        ] = "mean"
+
+    if "customer_product_reorder_rate" in df.columns:
+        agg[
+            "customer_product_reorder_rate"
+        ] = "mean"
+
+    result = (
+        df.groupby("department")
+        .agg(agg)
+        .reset_index()
+    )
 
     rename = {
-        "product_id": "Produits",
-        "user_id": "Clients",
-        "product_reorder_rate": "Taux de réachat produit",
-        "customer_product_reorder_rate": "Taux de réachat client-produit",
+
+        "product_id":
+            "Produits",
+
+        "user_id":
+            "Clients",
+
+        "product_reorder_rate":
+            "Taux de réachat produit",
+
+        "customer_product_reorder_rate":
+            "Taux de réachat client-produit",
     }
-    return result.rename(columns=rename)
 
-
-@st.cache_data(show_spinner=False)
-def get_target_balance(df):
-    if df is None or "target" not in df.columns:
-        return pd.DataFrame()
-    result = (
-        df["target"]
-        .value_counts()
-        .rename_axis("target")
-        .reset_index(name="count")
+    return result.rename(
+        columns=rename
     )
-    result["Statut"] = result["target"].map({0: "Non acheté", 1: "Acheté"})
-    return result
 
 
 def format_pct(value):
+
     if pd.isna(value):
         return "—"
+
     return f"{value:.1%}"
 
 
-def base_fig(fig, height=350):
+def base_fig(
+    fig,
+    height=350
+):
+
     fig.update_layout(
+
         height=height,
-        margin=dict(l=10, r=10, t=55, b=20),
+
+        margin=dict(
+            l=10,
+            r=10,
+            t=55,
+            b=20
+        ),
+
         plot_bgcolor="white",
+
         paper_bgcolor="white",
-        font=dict(color=TEXT),
-        title_font=dict(color=NAVY, size=16),
+
+        font=dict(
+            color=TEXT
+        ),
+
+        title_font=dict(
+            color=NAVY,
+            size=16
+        ),
+
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -449,153 +665,103 @@ def base_fig(fig, height=350):
             x=1,
         ),
     )
-    fig.update_xaxes(showgrid=False)
-    fig.update_yaxes(gridcolor="#EEF2F6")
+
+    fig.update_xaxes(
+        showgrid=False
+    )
+
+    fig.update_yaxes(
+        gridcolor="#EEF2F6"
+    )
+
     return fig
 
 
 # ============================================================
-# MODEL INSIGHTS
+# SHAP
 # ============================================================
 
 @st.cache_data(show_spinner=False)
 def load_shap_image():
+
     path = OUTPUT_DIR / "shap_summary.png"
-    return path if path.exists() else None
 
-
-# Le "_" devant model empêche Streamlit de tenter de hasher
-# l'objet RandomForestClassifier pour le cache.
-@st.cache_data(show_spinner=False)
-def compute_lift_curve(
-    _model,
-    training_df,
-    model_features,
-    sample_size=100_000,
-):
-    if (
-        _model is None
-        or training_df is None
-        or "target" not in training_df.columns
-        or "customer_total_orders" not in training_df.columns
-    ):
-        return None
-
-    split_value = training_df["customer_total_orders"].quantile(0.80)
-    valid = training_df[
-        training_df["customer_total_orders"] > split_value
-    ].copy()
-
-    if valid.empty:
-        return None
-
-    if len(valid) > sample_size:
-        valid = valid.sample(sample_size, random_state=42)
-
-    drop_cols = [
-        "user_id",
-        "product_id",
-        "target",
-        "first_order_number",
-        "last_order_number",
-        "department",
-    ]
-
-    X = valid.drop(
-        columns=[c for c in drop_cols if c in valid.columns],
-        errors="ignore",
+    return (
+        path
+        if path.exists()
+        else None
     )
-    y = valid["target"].astype(int)
-
-    if model_features:
-        missing = [c for c in model_features if c not in X.columns]
-        if missing:
-            return None
-        X = X[model_features]
-
-    X = X.fillna(0)
-
-    try:
-        scores_pred = _model.predict_proba(X)[:, 1]
-    except Exception:
-        return None
-
-    evaluation = pd.DataFrame(
-        {
-            "target": y.to_numpy(),
-            "score": scores_pred,
-        }
-    ).sort_values("score", ascending=False)
-
-    baseline_rate = evaluation["target"].mean()
-    positives = evaluation["target"].sum()
-
-    if baseline_rate <= 0:
-        return None
-
-    total = len(evaluation)
-    rows = []
-
-    for pct in np.arange(0.05, 1.01, 0.05):
-        n = max(1, int(total * pct))
-        top = evaluation.head(n)
-        precision = top["target"].mean()
-
-        rows.append(
-            {
-                "Population ciblée": pct,
-                "Precision": precision,
-                "Lift": precision / baseline_rate,
-                "Recall": (
-                    top["target"].sum() / positives
-                    if positives > 0
-                    else 0
-                ),
-            }
-        )
-
-    return pd.DataFrame(rows)
 
 
 # ============================================================
-# LOAD
+# LOAD DATA
 # ============================================================
 
 try:
+
     scores = load_scores()
+
     products = load_products()
+
     departments = load_departments()
+
+    overview_kpis = load_overview_kpis()
+
+    overview_customer = load_overview_customer_profile()
+
+    overview_product = load_overview_product_profile()
+
+    overview_department = load_overview_department_stats()
+
+    overview_target = load_overview_target_balance()
+
+
 except Exception as exc:
-    st.error(f"Impossible de charger les données : {exc}")
+
+    st.error(
+        f"Impossible de charger les données : {exc}"
+    )
+
     st.stop()
 
-scores = enrich_scores(scores, products, departments)
-training_df = load_training_dataset()
-training_df_enriched = enrich_training(training_df, departments)
-model_features = load_features()
+
+scores = enrich_scores(
+    scores,
+    products,
+    departments
+)
 
 
 # ============================================================
-# SIDEBAR — LOGO + FILTRES GLOBAUX
+# SIDEBAR
 # ============================================================
 
 with st.sidebar:
+
     if LOGO_PATH.exists():
-        st.markdown('<div class="sidebar-logo">', unsafe_allow_html=True)
-        st.image(str(LOGO_PATH), use_container_width=True)
-        st.markdown("</div>", unsafe_allow_html=True)
+
+        st.markdown(
+            '<div class="sidebar-logo">',
+            unsafe_allow_html=True
+        )
+
+        st.image(
+            str(LOGO_PATH),
+            use_container_width=True
+        )
+
+        st.markdown(
+            "</div>",
+            unsafe_allow_html=True
+        )
 
     st.markdown(
-        f"""
-        <div style="text-align:center;">
-            <div style="font-size:1.05rem;font-weight:800;color:{NAVY};">
-                CUSTOMER PROPENSITY SCORING
-            </div>
-            <div class="small-muted">
-                Next Best Product · Data Marketing
-            </div>
-        </div>
-        """,
+        f"""<div style="font-size:1.05rem;font-weight:800;color:{NAVY};">
+    CUSTOMER PROPENSITY SCORING
+    </div>
+    <div class="small-muted">
+    Next Best Product · Data Marketing
+    </div>""",
         unsafe_allow_html=True,
     )
 
@@ -607,40 +773,81 @@ with st.sidebar:
     )
 
     all_departments = sorted(
-        [x for x in scores["department"].dropna().unique().tolist()]
+        [
+            x
+            for x in
+            scores["department"]
+            .dropna()
+            .unique()
+            .tolist()
+        ]
     )
 
     departments_selected = st.multiselect(
+
         "Département",
+
         options=all_departments,
+
         default=[],
+
         key="global_departments",
     )
 
     all_segments = []
+
     if "marketing_segment" in scores.columns:
+
         all_segments = sorted(
-            [x for x in scores["marketing_segment"].dropna().unique().tolist()]
+            [
+                x
+                for x in
+                scores[
+                    "marketing_segment"
+                ]
+                .dropna()
+                .unique()
+                .tolist()
+            ]
         )
 
     segments_selected = st.multiselect(
+
         "Segment marketing",
+
         options=all_segments,
+
         default=[],
+
         key="global_segments",
     )
 
     all_deciles = []
+
     if "score_decile" in scores.columns:
+
         all_deciles = sorted(
-            [int(x) for x in scores["score_decile"].dropna().unique()]
+            [
+                int(x)
+                for x in
+                scores[
+                    "score_decile"
+                ]
+                .dropna()
+                .unique()
+            ]
         )
 
     deciles_selected = st.multiselect(
+
         "Décile",
+
         options=all_deciles,
+
         default=[],
+
         format_func=lambda x: f"D{x}",
+
         key="global_deciles",
     )
 
@@ -650,79 +857,108 @@ with st.sidebar:
     )
 
     min_score_pct = st.slider(
+
         "Score minimum",
+
         min_value=0,
+
         max_value=100,
+
         value=0,
+
         step=5,
+
         format="%d%%",
+
         key="global_min_score_pct",
+
         label_visibility="collapsed",
     )
 
-    # Conversion en score entre 0 et 1 pour le modèle
-    min_score = min_score_pct / 100
-
-    filtered_scores = apply_filters_to_scores(
-        scores,
-        departments_selected,
-        segments_selected,
-        deciles_selected,
-        min_score,
+    min_score = (
+        min_score_pct / 100
     )
 
-    filtered_training = apply_filters_to_training(
-        training_df_enriched,
-        departments_selected,
+    filtered_scores = (
+        apply_filters_to_scores(
+            scores,
+            departments_selected,
+            segments_selected,
+            deciles_selected,
+            min_score,
+        )
     )
 
     st.divider()
 
     st.markdown(
-        f"""
-        <div class="insight-card insight-cyan">
-            <b>Filtres actifs</b><br>
-            <span class="small-muted">
-                {len(filtered_scores):,} lignes de scoring après filtrage.
-            </span>
-        </div>
-        """,
+        f"""<div class="insight-card insight-cyan">
+    <b>Filtres actifs</b>
+    <span class="small-muted">
+    {len(filtered_scores):,} lignes de scoring
+    </span>
+    </div>""",
         unsafe_allow_html=True,
     )
 
-    st.caption("Modèle : Random Forest")
-    st.caption("Unité de scoring : client × produit")
+    st.caption(
+        "Modèle : Random Forest"
+    )
+
+    st.caption(
+        "Unité de scoring : client × produit"
+    )
 
 
 # ============================================================
-# HEADER + NAVIGATION
+# HEADER
 # ============================================================
 
-logo_col, title_col = st.columns([1.15, 7])
+logo_col, title_col = st.columns(
+    [1.15, 7]
+)
 
 with logo_col:
+
     if LOGO_PATH1.exists():
-        st.image(str(LOGO_PATH1), width=150)
+
+        st.image(
+            str(LOGO_PATH1),
+            width=150
+        )
+
 
 with title_col:
+
     st.markdown(
         '<div class="page-kicker">DATA MARKETING · NEXT BEST PRODUCT</div>',
         unsafe_allow_html=True,
     )
+
     st.markdown(
         '<div class="brand-title">Analyse du panier d achat chez Instacart</div>',
         unsafe_allow_html=True,
     )
 
 
-# Visuellement, le contrôle est transformé en barre de navigation.
-# Cela conserve un seul onglet actif et évite de calculer les 3 pages
-# en même temps comme le ferait st.tabs().
+# ============================================================
+# NAVIGATION
+# ============================================================
+
 page = st.radio(
+
     "Navigation",
-    ["Overview", "Scoring", "Model Insights"],
+
+    [
+        "Overview",
+        "Scoring",
+        "Model Insights"
+    ],
+
     horizontal=True,
+
     label_visibility="collapsed",
+
     key="main_navigation",
 )
 
@@ -730,359 +966,683 @@ page = st.radio(
 # ============================================================
 # OVERVIEW
 # ============================================================
-
 if page == "Overview":
-    if filtered_training is None:
-        st.warning(
-            "training_dataset.parquet est introuvable. Les statistiques détaillées ne peuvent pas être affichées."
+
+    # ============================================================
+    # KPI GLOBAUX
+    # ============================================================
+
+    if overview_kpis is not None:
+
+        k1, k2, k3, k4, k5 = st.columns(5)
+
+        k1.metric(
+            "Couples client-produit",
+            f"{overview_kpis['couples_client_produit']:,}".replace(",", " "),
         )
-        st.stop()
 
-    kpis = get_dataset_kpis(filtered_training)
+        k2.metric(
+            "Variables",
+            f"{overview_kpis['variables']:,}".replace(",", " "),
+        )
 
-    c1, c2, c3, c4, c5 = st.columns(5)
+        k3.metric(
+            "Clients",
+            f"{overview_kpis['clients']:,}".replace(",", " "),
+        )
 
-    with c1:
-        st.metric("Couples client-produit", f"{kpis['rows']:,}")
-    with c2:
-        st.metric("Variables", f"{kpis['variables']:,}")
-    with c3:
-        st.metric("Clients", f"{kpis['customers']:,}")
-    with c4:
-        st.metric("Produits", f"{kpis['products']:,}")
-    with c5:
-        st.metric("Départements", f"{kpis['departments']:,}")
+        k4.metric(
+            "Produits",
+            f"{overview_kpis['produits']:,}".replace(",", " "),
+        )
+
+        k5.metric(
+            "Départements",
+            f"{overview_kpis['departements']:,}".replace(",", " "),
+        )
+
+    st.markdown("<br>", unsafe_allow_html=True)
+
+    # ============================================================
+    # INSIGHT PRINCIPAL
+    # ============================================================
 
     st.markdown(
-        '<div class="insight-card insight-blue"><b>Lecture marketing :</b> le scoring travaille au niveau <b>client × produit</b>. L’objectif est de détecter les couples présentant les signaux les plus favorables à un prochain achat.</div>',
+        """
+        <div class="insight-card insight-blue">
+            <div class="small-muted">
+                Le dataset combine les comportements historiques des clients,
+                la diversité des produits achetés, la fréquence des commandes
+                et les signaux de réachat. Ces variables permettent ensuite
+                d'estimer la probabilité qu'un client soit intéressé par
+                un produit donné.
+            </div>
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    # -------- Client behavior --------
+    # ============================================================
+    # COMPORTEMENT CLIENT
+    # ============================================================
 
-    customer_profile = get_customer_profile(filtered_training)
+    st.markdown(
+        '<div class="section-title">Comportement client</div>',
+        unsafe_allow_html=True,
+    )
 
-    a, b = st.columns(2)
+    st.markdown(
+        """
+        <div class="section-subtitle">
+            Distribution, diversité du panier, taille moyenne des commandes
+            et rythme de réachat.
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
-    if not customer_profile.empty and px is not None:
-        with a:
-            col = "customer_total_orders"
-            if col in customer_profile:
-                fig = px.histogram(
-                    customer_profile,
-                    x=col,
-                    nbins=25,
-                    title="Distribution du nombre de commandes par client",
-                    labels={col: "Nombre de commandes"},
-                    color_discrete_sequence=[BLUE],
+    if overview_customer is not None:
+
+        c1, c2 = st.columns(2)
+
+        # --------------------------------------------------------
+        # Nombre de commandes
+        # --------------------------------------------------------
+
+        if "customer_total_orders" in overview_customer.columns:
+
+            fig = px.histogram(
+                overview_customer,
+                x="customer_total_orders",
+                nbins=30,
+                title="Distribution du nombre de commandes par client",
+                labels={
+                    "customer_total_orders": "Nombre total de commandes",
+                    "count": "Nombre de clients",
+                },
+            )
+
+            fig = base_fig(fig)
+            c1.plotly_chart(fig, use_container_width=True)
+
+        # --------------------------------------------------------
+        # Diversité produit
+        # --------------------------------------------------------
+
+        if "unique_products" in overview_customer.columns:
+
+            fig = px.histogram(
+                overview_customer,
+                x="unique_products",
+                nbins=30,
+                title="Diversité produit par client",
+                labels={
+                    "unique_products": "Nombre de produits uniques",
+                    "count": "Nombre de clients",
+                },
+            )
+
+            fig = base_fig(fig)
+            c2.plotly_chart(fig, use_container_width=True)
+
+        c3, c4 = st.columns(2)
+
+        # --------------------------------------------------------
+        # Taille moyenne du panier
+        # --------------------------------------------------------
+
+        if "avg_products_per_order" in overview_customer.columns:
+
+            fig = px.histogram(
+                overview_customer,
+                x="avg_products_per_order",
+                nbins=30,
+                title="Taille moyenne du panier",
+                labels={
+                    "avg_products_per_order": "Produits moyens par commande",
+                    "count": "Nombre de clients",
+                },
+            )
+
+            fig = base_fig(fig)
+            c3.plotly_chart(fig, use_container_width=True)
+
+        # --------------------------------------------------------
+        # Rythme de réachat
+        # --------------------------------------------------------
+
+        if "avg_days_between_orders" in overview_customer.columns:
+
+            fig = px.histogram(
+                overview_customer,
+                x="avg_days_between_orders",
+                nbins=30,
+                title="Rythme moyen de réachat",
+                labels={
+                    "avg_days_between_orders": "Jours moyens entre commandes",
+                    "count": "Nombre de clients",
+                },
+            )
+
+            fig = base_fig(fig)
+            c4.plotly_chart(fig, use_container_width=True)
+
+    # ============================================================
+    # COMPORTEMENT PRODUIT
+    # ============================================================
+
+    st.markdown(
+        '<div class="section-title">Comportement produit</div>',
+        unsafe_allow_html=True,
+    )
+
+    st.markdown(
+        """
+        <div class="section-subtitle">
+            Quels produits sont les plus achetés et lesquels présentent
+            les taux de réachat les plus élevés ?
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if overview_product is not None:
+
+        p1, p2 = st.columns(2)
+
+        # --------------------------------------------------------
+        # Taux de réachat produit
+        # --------------------------------------------------------
+
+        if "product_reorder_rate" in overview_product.columns:
+
+            fig = px.histogram(
+                overview_product,
+                x="product_reorder_rate",
+                nbins=30,
+                title="Distribution du taux de réachat produit",
+                labels={
+                    "product_reorder_rate": "Taux de réachat",
+                    "count": "Nombre de produits",
+                },
+            )
+
+            fig.update_xaxes(tickformat=".0%")
+            fig = base_fig(fig)
+
+            p1.plotly_chart(
+                fig,
+                use_container_width=True,
+            )
+
+        # --------------------------------------------------------
+        # Top 10 produits
+        # --------------------------------------------------------
+
+        if "product_purchase_count" in overview_product.columns:
+
+            top_products = (
+                overview_product
+                .sort_values(
+                    "product_purchase_count",
+                    ascending=False
                 )
-                base_fig(fig, 340)
-                st.plotly_chart(
-                    fig,
-                    use_container_width=True,
-                    config={"displayModeBar": False},
+                .head(10)
+                .copy()
+            )
+
+            if products is not None and "product_id" in products.columns:
+
+                product_name_col = None
+
+                for candidate in [
+                    "product_name",
+                    "name",
+                    "product",
+                ]:
+                    if candidate in products.columns:
+                        product_name_col = candidate
+                        break
+
+                if product_name_col:
+
+                    top_products = top_products.merge(
+                        products[
+                            ["product_id", product_name_col]
+                        ].drop_duplicates("product_id"),
+                        on="product_id",
+                        how="left",
+                    )
+
+                    top_products["label"] = (
+                        top_products[product_name_col]
+                        .fillna(
+                            "Produit "
+                            + top_products["product_id"].astype(str)
+                        )
+                    )
+
+                else:
+                    top_products["label"] = (
+                        "Produit "
+                        + top_products["product_id"].astype(str)
+                    )
+
+            else:
+
+                top_products["label"] = (
+                    "Produit "
+                    + top_products["product_id"].astype(str)
                 )
 
-        with b:
-            x = "unique_products"
-            if x in customer_profile:
-                fig = px.histogram(
-                    customer_profile,
-                    x=x,
-                    nbins=25,
-                    title="Diversité du portefeuille produit",
-                    labels={x: "Produits uniques"},
-                    color_discrete_sequence=[CYAN],
-                )
-                base_fig(fig, 340)
-                st.plotly_chart(
-                    fig,
-                    use_container_width=True,
-                    config={"displayModeBar": False},
-                )
+            top_products = top_products.sort_values(
+                "product_purchase_count",
+                ascending=True,
+            )
 
-    c, d = st.columns(2)
+            fig = px.bar(
+                top_products,
+                x="product_purchase_count",
+                y="label",
+                orientation="h",
+                title="Top 10 des produits les plus achetés",
+                labels={
+                    "product_purchase_count": "Nombre d'achats",
+                    "label": "",
+                },
+            )
 
-    if not customer_profile.empty and px is not None:
-        with c:
-            x = "avg_products_per_order"
-            if x in customer_profile:
-                fig = px.histogram(
-                    customer_profile,
-                    x=x,
-                    nbins=25,
-                    title="Taille moyenne du panier",
-                    labels={x: "Produits / commande"},
-                    color_discrete_sequence=[TEAL],
-                )
-                base_fig(fig, 340)
-                st.plotly_chart(
-                    fig,
-                    use_container_width=True,
-                    config={"displayModeBar": False},
-                )
+            fig = base_fig(fig)
 
-        with d:
-            x = "avg_days_between_orders"
-            if x in customer_profile:
-                fig = px.histogram(
-                    customer_profile,
-                    x=x,
-                    nbins=25,
-                    title="Rythme de réachat",
-                    labels={x: "Jours entre commandes"},
-                    color_discrete_sequence=[VIOLET],
-                )
-                base_fig(fig, 340)
-                st.plotly_chart(
-                    fig,
-                    use_container_width=True,
-                    config={"displayModeBar": False},
-                )
+            p2.plotly_chart(
+                fig,
+                use_container_width=True,
+            )
 
-    # -------- Product behavior --------
-    product_profile = get_product_profile(filtered_training)
-    p1, p2 = st.columns(2)
+    # ============================================================
+    # TARGET / MIX DES CANDIDATS
+    # ============================================================
 
-    if not product_profile.empty and px is not None:
-        with p1:
-            if "product_reorder_rate" in product_profile.columns:
-                fig = px.histogram(
-                    product_profile,
-                    x="product_reorder_rate",
-                    nbins=25,
-                    title="Distribution du taux de réachat produit",
-                    labels={"product_reorder_rate": "Taux de réachat"},
-                    color_discrete_sequence=[ORANGE],
-                )
-                fig.update_xaxes(tickformat=".0%")
-                base_fig(fig, 340)
-                st.plotly_chart(
-                    fig,
-                    use_container_width=True,
-                    config={"displayModeBar": False},
-                )
+    st.markdown(
+        '<div class="section-title">Réachat et candidats</div>',
+        unsafe_allow_html=True,
+    )
 
-        with p2:
-            if "product_purchase_count" in product_profile.columns:
-                top_products = (
-                    product_profile
-                    .sort_values("product_purchase_count", ascending=False)
-                    .head(10)
-                    .sort_values("product_purchase_count")
-                )
-
-                fig = px.bar(
-                    top_products,
-                    x="product_purchase_count",
-                    y="product_id",
-                    orientation="h",
-                    title="Top 10 produits par fréquence d’achat",
-                    labels={
-                        "product_purchase_count": "Achats",
-                        "product_id": "Produit",
-                    },
-                    color="product_purchase_count",
-                    color_continuous_scale=[LIGHT_BLUE, BLUE, NAVY],
-                )
-                base_fig(fig, 390)
-                st.plotly_chart(
-                    fig,
-                    use_container_width=True,
-                    config={"displayModeBar": False},
-                )
-
-    # -------- Target / candidate mix --------
-    target_balance = get_target_balance(filtered_training)
     t1, t2 = st.columns(2)
 
-    with t1:
-        if not target_balance.empty and px is not None:
-            fig = px.pie(
-                target_balance,
-                names="Statut",
-                values="count",
-                title="Répartition des couples client-produit",
-                color_discrete_sequence=[BLUE, CYAN],
-                hole=0.52,
-            )
-            base_fig(fig, 350)
-            st.plotly_chart(
-                fig,
-                use_container_width=True,
-                config={"displayModeBar": False},
+    # ------------------------------------------------------------
+    # Répartition target
+    # ------------------------------------------------------------
+
+    if overview_target is not None:
+
+        fig = px.pie(
+            overview_target,
+            names="label",
+            values="count",
+            title="Répartition réachat / non-réachat",
+            hole=0.45,
+        )
+
+        fig = base_fig(fig)
+
+        t1.plotly_chart(
+            fig,
+            use_container_width=True,
+        )
+
+    # ------------------------------------------------------------
+    # Produits par département
+    # ------------------------------------------------------------
+
+    if overview_department is not None:
+
+        department_plot = overview_department.copy()
+
+        department_name_col = None
+
+        if (
+            departments is not None
+            and "department_id" in departments.columns
+        ):
+
+            for candidate in [
+                "department",
+                "department_name",
+                "name",
+            ]:
+
+                if candidate in departments.columns:
+                    department_name_col = candidate
+                    break
+
+            if department_name_col:
+
+                department_plot = department_plot.merge(
+                    departments[
+                        [
+                            "department_id",
+                            department_name_col,
+                        ]
+                    ].drop_duplicates("department_id"),
+                    on="department_id",
+                    how="left",
+                )
+
+        if department_name_col:
+
+            department_plot["label"] = (
+                department_plot[department_name_col]
+                .fillna(
+                    "Département "
+                    + department_plot["department_id"].astype(str)
+                )
             )
 
-    with t2:
-        dept_stats = get_department_stats(filtered_training)
+        else:
 
-        if not dept_stats.empty and px is not None:
-            top_depts = (
-                dept_stats
-                .sort_values("Produits", ascending=False)
-                .head(10)
-                .sort_values("Produits")
+            department_plot["label"] = (
+                "Département "
+                + department_plot["department_id"].astype(str)
             )
 
-            fig = px.bar(
-                top_depts,
-                x="Produits",
-                y="department",
-                orientation="h",
-                title="Départements couvrant le plus de produits",
-                labels={
-                    "department": "Département",
-                    "Produits": "Produits",
-                },
-                color="Produits",
-                color_continuous_scale=[LIGHT_CYAN, CYAN, BLUE],
-            )
-            base_fig(fig, 390)
-            st.plotly_chart(
-                fig,
-                use_container_width=True,
-                config={"displayModeBar": False},
-            )
+        department_plot = (
+            department_plot
+            .sort_values("nb_produits", ascending=False)
+            .head(10)
+            .sort_values("nb_produits", ascending=True)
+        )
 
-    # -------- Reorder rate by department --------
+        fig = px.bar(
+            department_plot,
+            x="nb_produits",
+            y="label",
+            orientation="h",
+            title="Top départements par nombre de produits",
+            labels={
+                "nb_produits": "Nombre de produits",
+                "label": "",
+            },
+        )
+
+        fig = base_fig(fig)
+
+        t2.plotly_chart(
+            fig,
+            use_container_width=True,
+        )
+
+    # ============================================================
+    # STATISTIQUES DÉPARTEMENTS
+    # ============================================================
+
     st.markdown(
-        '<div class="section-title">🏷️ Les signaux de réachat ?</div>',
+        '<div class="section-title">Taux de réachat par département</div>',
         unsafe_allow_html=True,
     )
 
-    dept_stats = get_department_stats(filtered_training)
+    if overview_department is not None:
 
-    if not dept_stats.empty and px is not None:
-        metric_col = (
-            "Taux de réachat client-produit"
-            if "Taux de réachat client-produit" in dept_stats.columns
-            else "Taux de réachat produit"
-        )
+        department_reorder = overview_department.copy()
 
-        if metric_col in dept_stats.columns:
-            chart_df = (
-                dept_stats
-                .dropna(subset=[metric_col])
-                .sort_values(metric_col, ascending=False)
-                .head(10)
-                .sort_values(metric_col)
+        department_name_col = None
+
+        if (
+            departments is not None
+            and "department_id" in departments.columns
+        ):
+
+            for candidate in [
+                "department",
+                "department_name",
+                "name",
+            ]:
+
+                if candidate in departments.columns:
+                    department_name_col = candidate
+                    break
+
+            if department_name_col:
+
+                department_reorder = department_reorder.merge(
+                    departments[
+                        [
+                            "department_id",
+                            department_name_col,
+                        ]
+                    ].drop_duplicates("department_id"),
+                    on="department_id",
+                    how="left",
+                )
+
+        if department_name_col:
+
+            department_reorder["label"] = (
+                department_reorder[department_name_col]
+                .fillna(
+                    "Département "
+                    + department_reorder["department_id"].astype(str)
+                )
             )
 
-            fig = px.bar(
-                chart_df,
-                x=metric_col,
-                y="department",
-                orientation="h",
-                title="Top départements par taux moyen de réachat",
-                labels={
-                    "department": "Département",
-                    metric_col: "Taux de réachat",
-                },
-                color=metric_col,
-                color_continuous_scale=[LIGHT_VIOLET, VIOLET, NAVY],
-            )
-            fig.update_xaxes(tickformat=".0%")
-            base_fig(fig, 420)
-            st.plotly_chart(
-                fig,
-                use_container_width=True,
-                config={"displayModeBar": False},
+        else:
+
+            department_reorder["label"] = (
+                "Département "
+                + department_reorder["department_id"].astype(str)
             )
 
-    # -------- Score distribution --------
-    if (
-        not filtered_scores.empty
-        and "propensity_score" in filtered_scores.columns
-        and px is not None
-    ):
-        st.markdown(
-            '<div class="section-title">📈 Distribution des scores de propension</div>',
-            unsafe_allow_html=True,
+        department_reorder = department_reorder.sort_values(
+            "taux_reachat",
+            ascending=True,
         )
 
-        score_sample = filtered_scores.sample(
-            min(100_000, len(filtered_scores)),
-            random_state=42,
+        fig = px.bar(
+            department_reorder,
+            x="taux_reachat",
+            y="label",
+            orientation="h",
+            title="Taux de réachat moyen par département",
+            labels={
+                "taux_reachat": "Taux de réachat",
+                "label": "",
+            },
         )
 
-        fig = px.histogram(
-            score_sample,
-            x="propensity_score",
-            nbins=30,
-            title="Concentration des scores sur les couples client-produit",
-            labels={"propensity_score": "Score de propension"},
-            color_discrete_sequence=[BLUE],
-        )
         fig.update_xaxes(tickformat=".0%")
-        base_fig(fig, 350)
+        fig = base_fig(fig)
+
         st.plotly_chart(
             fig,
             use_container_width=True,
-            config={"displayModeBar": False},
         )
 
+    # ============================================================
+    # PROPENSITY SCORE
+    # ============================================================
 
+    st.markdown(
+        '<div class="section-title">Distribution des scores de propension</div>',
+        unsafe_allow_html=True,
+    )
+
+    score_data = scores.copy()
+
+    if score_data is not None and "propensity_score" in score_data.columns:
+
+        fig = px.histogram(
+            score_data,
+            x="propensity_score",
+            nbins=40,
+            title="Distribution des propensity scores",
+            labels={
+                "propensity_score": "Score de propension",
+                "count": "Nombre de couples client-produit",
+            },
+        )
+
+        fig.update_xaxes(tickformat=".0%")
+        fig = base_fig(fig)
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True,
+        )
+
+        st.markdown(
+            """
+            <div class="insight-card insight-cyan">
+                <b>Lecture marketing</b><br><br>
+                Le score de propension permet d'identifier les couples
+                client-produit présentant la plus forte probabilité
+                d'intérêt. Les scores élevés peuvent être utilisés pour
+                prioriser les recommandations, les campagnes de
+                cross-sell ou les scénarios de réachat.
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 # ============================================================
 # SCORING
 # ============================================================
 
 elif page == "Scoring":
+
     st.markdown(
         '<div class="section-title">🎯 Scoring client</div>',
         unsafe_allow_html=True,
     )
+
     st.markdown(
         '<div class="section-subtitle">Sélectionnez un client pour visualiser ses produits à plus forte appétence.</div>',
         unsafe_allow_html=True,
     )
 
     if filtered_scores.empty:
-        st.warning("Aucune ligne de scoring ne correspond aux filtres globaux.")
+
+        st.warning(
+            "Aucune ligne de scoring ne correspond aux filtres globaux."
+        )
+
         st.stop()
 
     customers = np.sort(
-        filtered_scores["user_id"].dropna().unique()
+        filtered_scores[
+            "user_id"
+        ]
+        .dropna()
+        .unique()
     )
 
     customer_id = st.selectbox(
+
         "Sélectionner un client",
+
         customers,
+
         key="selected_customer",
     )
 
     customer_scores = (
+
         filtered_scores[
-            filtered_scores["user_id"] == customer_id
+
+            filtered_scores[
+                "user_id"
+            ] == customer_id
+
         ]
-        .sort_values("propensity_score", ascending=False)
+
+        .sort_values(
+            "propensity_score",
+            ascending=False
+        )
+
         .head(10)
+
         .copy()
     )
 
     if customer_scores.empty:
-        st.warning("Aucune recommandation disponible pour ce client.")
+
+        st.warning(
+            "Aucune recommandation disponible pour ce client."
+        )
+
         st.stop()
 
-    max_score = customer_scores["propensity_score"].max()
-    mean_score = customer_scores["propensity_score"].mean()
+    max_score = (
+        customer_scores[
+            "propensity_score"
+        ].max()
+    )
+
+    mean_score = (
+        customer_scores[
+            "propensity_score"
+        ].mean()
+    )
 
     c1, c2, c3, c4 = st.columns(4)
 
     with c1:
-        st.metric("Produits recommandés", len(customer_scores))
+
+        st.metric(
+            "Produits recommandés",
+            len(customer_scores)
+        )
+
     with c2:
-        st.metric("Score maximum", format_pct(max_score))
+
+        st.metric(
+            "Score maximum",
+            format_pct(max_score)
+        )
+
     with c3:
-        st.metric("Score moyen", format_pct(mean_score))
+
+        st.metric(
+            "Score moyen",
+            format_pct(mean_score)
+        )
+
     with c4:
-        if "score_decile" in customer_scores.columns:
-            best_decile = customer_scores["score_decile"].min()
-            st.metric("Meilleur décile", f"D{int(best_decile)}")
+
+        if (
+            "score_decile"
+            in customer_scores.columns
+        ):
+
+            best_decile = (
+                customer_scores[
+                    "score_decile"
+                ].min()
+            )
+
+            st.metric(
+                "Meilleur décile",
+                f"D{int(best_decile)}"
+            )
+
         else:
-            st.metric("Client", str(customer_id))
+
+            st.metric(
+                "Client",
+                str(customer_id)
+            )
 
     st.markdown(
-        '<div class="insight-card insight-blue"><b>Lecture CRM :</b> les produits du haut du classement correspondent aux signaux d’appétence les plus élevés pour ce client. Le score sert à prioriser les actions.</div>',
+        """
+        <div class="insight-card insight-blue">
+
+        <b>Lecture CRM :</b>
+        les produits du haut du classement correspondent
+        aux signaux d’appétence les plus élevés pour ce client.
+
+        Le score sert à prioriser les actions.
+
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
@@ -1092,121 +1652,252 @@ elif page == "Scoring":
     )
 
     display_columns = [
+
         "product_name",
+
         "department",
+
         "propensity_score",
+
         "score_decile",
+
         "marketing_segment",
+
     ]
 
     display_columns = [
+
         c for c in display_columns
+
         if c in customer_scores.columns
+
     ]
 
-    display_df = customer_scores[display_columns].copy()
+    display_df = (
+        customer_scores[
+            display_columns
+        ].copy()
+    )
 
     display_df = display_df.rename(
+
         columns={
-            "product_name": "Produit",
-            "department": "Département",
-            "propensity_score": "Score de propension",
-            "score_decile": "Décile",
-            "marketing_segment": "Segment marketing",
+
+            "product_name":
+                "Produit",
+
+            "department":
+                "Département",
+
+            "propensity_score":
+                "Score de propension",
+
+            "score_decile":
+                "Décile",
+
+            "marketing_segment":
+                "Segment marketing",
         }
     )
 
-    if "Score de propension" in display_df.columns:
-        display_df["Score de propension"] = (
-            display_df["Score de propension"].map(format_pct)
+    if (
+        "Score de propension"
+        in display_df.columns
+    ):
+
+        display_df[
+            "Score de propension"
+        ] = (
+
+            display_df[
+                "Score de propension"
+            ]
+
+            .map(format_pct)
         )
 
     st.dataframe(
+
         display_df,
+
         use_container_width=True,
+
         hide_index=True,
     )
 
-    left, right = st.columns([1.35, 1])
+    left, right = st.columns(
+        [1.35, 1]
+    )
 
     with left:
+
         if px is not None:
-            chart_df = customer_scores.copy()
-            chart_df["Produit"] = (
-                chart_df["product_name"].fillna("Produit inconnu")
+
+            chart_df = (
+                customer_scores.copy()
             )
-            chart_df = chart_df.sort_values("propensity_score")
+
+            chart_df["Produit"] = (
+
+                chart_df[
+                    "product_name"
+                ]
+
+                .fillna(
+                    "Produit inconnu"
+                )
+            )
+
+            chart_df = (
+                chart_df
+                .sort_values(
+                    "propensity_score"
+                )
+            )
 
             fig = px.bar(
+
                 chart_df,
+
                 x="propensity_score",
+
                 y="Produit",
+
                 orientation="h",
+
                 title="Intensité de l’appétence",
+
                 labels={
-                    "propensity_score": "Score",
-                    "Produit": "",
+
+                    "propensity_score":
+                    "Score",
+
+                    "Produit":
+                    "",
                 },
+
                 color="propensity_score",
+
                 color_continuous_scale=[
+
                     LIGHT_CYAN,
                     CYAN,
                     BLUE,
                     NAVY,
+
                 ],
             )
 
             fig.update_xaxes(
+
                 range=[0, 1],
+
                 tickformat=".0%",
             )
 
-            base_fig(fig, 440)
-            st.plotly_chart(
+            base_fig(
                 fig,
+                440
+            )
+
+            st.plotly_chart(
+
+                fig,
+
                 use_container_width=True,
-                config={"displayModeBar": False},
+
+                config={
+                    "displayModeBar": False
+                },
             )
 
     with right:
-        if "department" in customer_scores.columns and px is not None:
+
+        if (
+            "department"
+            in customer_scores.columns
+            and px is not None
+        ):
+
             dept_mix = (
-                customer_scores["department"]
+
+                customer_scores[
+                    "department"
+                ]
+
                 .value_counts()
-                .rename_axis("Département")
-                .reset_index(name="Produits recommandés")
+
+                .rename_axis(
+                    "Département"
+                )
+
+                .reset_index(
+                    name="Produits recommandés"
+                )
             )
 
             fig = px.pie(
+
                 dept_mix,
+
                 names="Département",
+
                 values="Produits recommandés",
+
                 title="Mix des départements recommandés",
+
                 color_discrete_sequence=[
+
                     BLUE,
                     CYAN,
                     TEAL,
                     VIOLET,
                     ORANGE,
                     PINK,
+
                 ],
+
                 hole=0.5,
             )
 
-            base_fig(fig, 440)
-            st.plotly_chart(
+            base_fig(
                 fig,
-                use_container_width=True,
-                config={"displayModeBar": False},
+                440
             )
 
-    top_product = customer_scores.iloc[0]
+            st.plotly_chart(
 
-    score = top_product["propensity_score"]
-    product_name = top_product.get("product_name", "ce produit")
-    department = top_product.get(
-        "department",
-        "département inconnu",
+                fig,
+
+                use_container_width=True,
+
+                config={
+                    "displayModeBar": False
+                },
+            )
+
+    top_product = (
+        customer_scores.iloc[0]
+    )
+
+    score = (
+        top_product[
+            "propensity_score"
+        ]
+    )
+
+    product_name = (
+        top_product.get(
+            "product_name",
+            "ce produit"
+        )
+    )
+
+    department = (
+        top_product.get(
+            "department",
+            "département inconnu"
+        )
     )
 
     st.markdown(
@@ -1215,38 +1906,56 @@ elif page == "Scoring":
     )
 
     if score >= 0.80:
-        title = "Forte appétence détectée"
-        action = (
-            "Prioriser une recommandation personnalisée "
-            "ou un scénario de réachat."
+
+        title = (
+            "Forte appétence détectée"
         )
+
+        action = (
+            "Prioriser une recommandation "
+            "personnalisée ou un scénario de réachat."
+        )
+
         css = "insight-blue"
+
     elif score >= 0.60:
-        title = "Appétence intéressante"
-        action = (
-            "Tester une personnalisation ou un A/B test "
-            "avant généralisation."
+
+        title = (
+            "Appétence intéressante"
         )
+
+        action = (
+            "Tester une personnalisation "
+            "ou un A/B test avant généralisation."
+        )
+
         css = "insight-cyan"
+
     else:
-        title = "Appétence modérée à faible"
-        action = (
-            "Ne pas prioriser ce produit dans une pression "
-            "commerciale immédiate."
+
+        title = (
+            "Appétence modérée à faible"
         )
+
+        action = (
+            "Ne pas prioriser ce produit "
+            "dans une pression commerciale immédiate."
+        )
+
         css = "insight-orange"
 
     st.markdown(
-        f"""
-        <div class="insight-card {css}">
-            <b>{title}</b><br><br>
-            <b>{product_name}</b> · {department}<br>
-            Score de propension : <b>{score:.1%}</b><br><br>
-            → <b>Action :</b> {action}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+    f"""<div class="insight-card {css}">
+<b>{title}</b>
+<br><br>
+<b>{product_name}</b> · {department}
+<br>
+Score de propension : <b>{score:.1%}</b>
+<br><br>
+→ <b>Action :</b> {action}
+</div>""",
+    unsafe_allow_html=True,
+)
 
 
 # ============================================================
@@ -1254,14 +1963,21 @@ elif page == "Scoring":
 # ============================================================
 
 else:
+
     st.markdown(
         '<div class="section-title">🔎 Model Insights</div>',
         unsafe_allow_html=True,
     )
+
     st.markdown(
         '<div class="section-subtitle">Performance du modèle, explicabilité et capacité à concentrer les achats potentiels.</div>',
         unsafe_allow_html=True,
     )
+
+
+    # ========================================================
+    # PERFORMANCE
+    # ========================================================
 
     st.markdown(
         '<div class="section-title">🏆 Performance de ranking</div>',
@@ -1271,62 +1987,133 @@ else:
     c1, c2, c3, c4 = st.columns(4)
 
     with c1:
-        st.metric("ROC-AUC", "0.752")
+
+        st.metric(
+            "ROC-AUC",
+            "0.8076"
+        )
+
     with c2:
-        st.metric("PR-AUC", "0.630")
+
+        st.metric(
+            "PR-AUC",
+            "0.7034"
+        )
+
     with c3:
-        st.metric("Precision@10%", "74.8%")
+
+        st.metric(
+            "Precision@10%",
+            "82.0%"
+        )
+
     with c4:
-        st.metric("Lift@10%", "2.10×")
+
+        st.metric(
+            "Lift@10%",
+            "2.30×"
+        )
+
 
     if px is not None:
+
         metric_df = pd.DataFrame(
+
             {
                 "Métrique": [
+
                     "ROC-AUC",
+
                     "PR-AUC",
+
                     "Precision@10%",
+
                 ],
+
                 "Valeur": [
-                    0.752,
-                    0.630,
-                    0.748,
+
+                    0.8076,
+
+                    0.7034,
+
+                    0.8200,
+
                 ],
             }
         )
 
         fig = px.bar(
+
             metric_df,
+
             x="Métrique",
+
             y="Valeur",
+
             title="Indicateurs clés de performance",
-            labels={"Valeur": "Score"},
+
+            labels={
+                "Valeur":
+                "Score"
+            },
+
             color="Métrique",
+
             color_discrete_sequence=[
+
                 BLUE,
                 CYAN,
                 VIOLET,
+
             ],
         )
 
         fig.update_yaxes(
+
             range=[0, 1],
+
             tickformat=".0%",
         )
 
-        base_fig(fig, 350)
-        st.plotly_chart(
+        base_fig(
             fig,
-            use_container_width=True,
-            config={"displayModeBar": False},
+            350
         )
 
+        st.plotly_chart(
+
+            fig,
+
+            use_container_width=True,
+
+            config={
+                "displayModeBar": False
+            },
+        )
+
+
     st.markdown(
-        '<div class="insight-card insight-violet"><b>Lecture business :</b> à 10% de la population ciblée, le modèle concentre environ <b>2,10×</b> plus de positifs qu’un ciblage aléatoire. La Precision@10% est de <b>74,8%</b> sur l’échantillon de validation utilisé.</div>',
+        """
+        <div class="insight-card insight-violet">
+
+        <b>Lecture business :</b>
+        à 10% de la population ciblée, le modèle
+        concentre environ <b>2,30×</b> plus de positifs
+        qu’un ciblage aléatoire.
+
+        La Precision@10% est de
+        <b>82,0%</b> sur l’échantillon de validation utilisé.
+
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    # -------- SHAP --------
+
+    # ========================================================
+    # SHAP
+    # ========================================================
+
     st.markdown(
         '<div class="section-title">🧠 SHAP — facteurs qui expliquent le scoring</div>',
         unsafe_allow_html=True,
@@ -1335,150 +2122,268 @@ else:
     shap_path = load_shap_image()
 
     if shap_path is not None:
+
         st.image(
             str(shap_path),
             use_container_width=True,
         )
+
         st.caption(
             "Importance globale des variables calculée avec SHAP sur le Random Forest."
         )
+
     else:
+
         st.warning(
-            "Le fichier data/output/shap_summary.png n'a pas été trouvé. "
-            "Lance le script SHAP avant de revenir sur cette page."
+            "Le fichier data/output/shap_summary.png "
+            "n'a pas été trouvé."
         )
 
+
     st.markdown(
-        '<div class="insight-card insight-cyan"><b>Lecture métier :</b> les variables client-produit sont particulièrement pertinentes pour une logique de réachat : fréquence d’achat, taux de réachat, récence et part des commandes du client contenant le produit.</div>',
+        """
+        <div class="insight-card insight-cyan">
+
+        <b>Lecture métier :</b>
+        les variables client-produit sont particulièrement
+        pertinentes pour une logique de réachat :
+
+        fréquence d’achat, taux de réachat, récence
+        et part des commandes du client contenant le produit.
+
+        </div>
+        """,
         unsafe_allow_html=True,
     )
 
-    # -------- Lift --------
+
+    # ========================================================
+    # LIFT
+    # ========================================================
+
     st.markdown(
         '<div class="section-title">📈 Efficacité du ciblage</div>',
         unsafe_allow_html=True,
     )
 
-    model = load_model()
+    lift_df = load_lift_curve()
 
-    with st.spinner("Calcul de la courbe de lift..."):
-        lift_df = compute_lift_curve(
-            model,
-            training_df,
-            model_features,
-        )
+    if (
+        lift_df is not None
+        and not lift_df.empty
+    ):
 
-    if lift_df is not None and not lift_df.empty:
         if px is not None:
-            plot_df = lift_df.copy()
-            plot_df["Population ciblée"] = (
-                plot_df["Population ciblée"] * 100
+
+            plot_df = (
+                lift_df.copy()
+            )
+
+            plot_df[
+                "Population ciblée"
+            ] = (
+
+                plot_df[
+                    "Population ciblée"
+                ] * 100
             )
 
             fig = px.line(
+
                 plot_df,
+
                 x="Population ciblée",
+
                 y="Lift",
+
                 markers=True,
+
                 title="Lift selon la part de la population ciblée",
+
                 labels={
-                    "Population ciblée": "Population ciblée (%)",
-                    "Lift": "Lift",
+
+                    "Population ciblée":
+                    "Population ciblée (%)",
+
+                    "Lift":
+                    "Lift",
                 },
-                color_discrete_sequence=[BLUE],
+
+                color_discrete_sequence=[
+                    BLUE
+                ],
             )
 
             fig.add_hline(
+
                 y=1,
+
                 line_dash="dash",
-                annotation_text="Référence aléatoire",
+
+                annotation_text=
+                "Référence aléatoire",
             )
 
-            fig.update_xaxes(ticksuffix="%")
+            fig.update_xaxes(
+                ticksuffix="%"
+            )
 
-            base_fig(fig, 390)
-            st.plotly_chart(
+            base_fig(
                 fig,
-                use_container_width=True,
-                config={"displayModeBar": False},
+                390
             )
+
+            st.plotly_chart(
+
+                fig,
+
+                use_container_width=True,
+
+                config={
+                    "displayModeBar": False
+                },
+            )
+
 
         top10 = lift_df.iloc[
+
             np.argmin(
+
                 np.abs(
-                    lift_df["Population ciblée"].to_numpy()
+
+                    lift_df[
+                        "Population ciblée"
+                    ].to_numpy()
+
                     - 0.10
+
                 )
             )
         ]
 
+
         c1, c2, c3 = st.columns(3)
 
         with c1:
+
             st.metric(
+
                 "Lift à 10%",
+
                 f"{top10['Lift']:.2f}×",
             )
 
         with c2:
+
             st.metric(
+
                 "Precision à 10%",
-                format_pct(top10["Precision"]),
+
+                format_pct(
+                    top10["Precision"]
+                ),
             )
 
         with c3:
+
             st.metric(
+
                 "Recall à 10%",
-                format_pct(top10["Recall"]),
+
+                format_pct(
+                    top10["Recall"]
+                ),
             )
 
+
         st.markdown(
-            '<div class="insight-card insight-teal"><b>Lecture CRM :</b> la courbe permet de visualiser jusqu’où réduire la population ciblée tout en conservant une concentration élevée d’acheteurs potentiels.</div>',
+            """
+            <div class="insight-card insight-teal">
+
+            <b>Lecture CRM :</b>
+            la courbe permet de visualiser jusqu’où réduire
+            la population ciblée tout en conservant une
+            concentration élevée d’acheteurs potentiels.
+
+            </div>
+            """,
             unsafe_allow_html=True,
         )
 
     else:
+
         st.warning(
-            "Impossible de reconstruire la courbe de lift. Vérifie que le modèle, "
-            "features.joblib et training_dataset.parquet sont disponibles."
+            "Le fichier lift_curve.csv est introuvable. "
+            "Lance 08_prepare_deployment.py."
         )
 
+
     st.caption(
-        "Important : la validation actuelle repose sur un split selon customer_total_orders. "
-        "Il s'agit d'un split par profondeur d'historique et non d'un véritable backtest temporel."
+        """
+        Important : la validation actuelle repose sur un split
+        selon customer_total_orders. Il s'agit d'un split par
+        profondeur d'historique et non d'un véritable
+        backtest temporel.
+        """
     )
 
-    # -------- Variable families --------
+
+    # ========================================================
+    # VARIABLE FAMILIES
+    # ========================================================
+
     st.markdown(
         '<div class="section-title">🧩 Lecture des familles de variables</div>',
         unsafe_allow_html=True,
     )
 
     family_df = pd.DataFrame(
+
         {
+
             "Famille": [
+
                 "Client × produit",
+
                 "Produit",
+
                 "Client",
+
                 "Client × département",
+
             ],
+
             "Rôle": [
+
                 "Signal principal de réachat",
+
                 "Popularité et répétition globale",
+
                 "Intensité et habitudes d’achat",
+
                 "Affinité avec la catégorie",
+
             ],
+
             "Exemples": [
+
                 "fréquence, récence, reorder rate, share",
+
                 "purchase count, unique users, reorder rate",
+
                 "total orders, panier moyen, diversité",
+
                 "department share, achats catégorie",
+
             ],
         }
     )
 
     st.dataframe(
+
         family_df,
+
         use_container_width=True,
+
         hide_index=True,
     )
